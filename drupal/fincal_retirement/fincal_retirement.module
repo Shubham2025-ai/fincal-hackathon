@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * FinCal Retirement Calculator — Drupal 10 integration module.
+ *
+ * Provides:
+ *  1. A service (fincal_retirement.client) to call the Next.js API.
+ *  2. A Block plugin that renders the calculator iframe or embed.
+ *  3. A REST proxy route (optional) so Drupal can forward requests.
+ *
+ * Requirements:
+ *  - Drupal 10.x
+ *  - PHP 8.1+
+ *  - guzzlehttp/guzzle (ships with Drupal core via drupal/core-recommended)
+ *
+ * Configuration:
+ *  Set the Next.js base URL in Drupal settings.php:
+ *    $config['fincal_retirement.settings']['nextjs_base_url'] = 'http://localhost:3000';
+ *  Or via the Drupal config form at /admin/config/fincal/retirement.
+ */
+
+declare(strict_types=1);

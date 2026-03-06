@@ -1,0 +1,9 @@
+name: 'FinCal Retirement Calculator'
+type: module
+description: 'Integrates the FinCal Retirement Planning Calculator with Drupal 10. Provides a block and REST proxy for the Next.js calculator service.'
+package: 'FinCal'
+core_version_requirement: ^10
+version: '1.0.0'
+dependencies:
+  - drupal:block
+  - drupal:serialization

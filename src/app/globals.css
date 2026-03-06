@@ -1,0 +1,377 @@
+/* ─── Global Reset & Base ─────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Smooth scroll only when user hasn't opted out (WCAG 2.3.3) */
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  font-family: Arial, Verdana, sans-serif;
+  background-color: #f4f7fb;
+  color: #1a1a2e;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Screen-reader-only utility (WCAG 1.3.1) ────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Skip Link (WCAG 2.4.1) ─────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -9999px;
+  left: 6px;
+  z-index: 9999;
+  background: #224c87;
+  color: #ffffff;
+  padding: 10px 20px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* ─── Focus visible ring (WCAG 2.4.7) ───────────────────────────────────── */
+:focus-visible {
+  outline: 3px solid #224c87;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+input[type="range"]:focus-visible {
+  outline: 3px solid #224c87;
+  outline-offset: 8px;
+  border-radius: 4px;
+}
+
+/* Remove default focus style only when :focus-visible is supported */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ─── Responsive images ───────────────────────────────────────────────────── */
+img,
+svg {
+  max-width: 100%;
+}
+
+/* ─── Links ───────────────────────────────────────────────────────────────── */
+a {
+  color: #224c87;
+  text-decoration: underline;
+}
+a:hover {
+  color: #1a3a6b;
+}
+
+/* ─── Buttons base reset ──────────────────────────────────────────────────── */
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ─── Range input cross-browser normalise ────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+}
+input[type="range"]::-moz-range-thumb {
+  border: none;
+  background: transparent;
+}
+
+/* ─── Entrance Animations ─────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulseBlue {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,76,135,0); }
+  50%       { box-shadow: 0 0 0 6px rgba(34,76,135,0.12); }
+}
+
+/* Card entrance — apply class to result cards */
+.animate-fade-up {
+  animation: fadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-fade-up:nth-child(1) { animation-delay: 0.05s; }
+.animate-fade-up:nth-child(2) { animation-delay: 0.10s; }
+.animate-fade-up:nth-child(3) { animation-delay: 0.15s; }
+.animate-fade-up:nth-child(4) { animation-delay: 0.20s; }
+
+.animate-scale-in {
+  animation: scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-slide-left {
+  animation: slideInLeft 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Result section entrance */
+.results-enter {
+  animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Slider thumb pulse on focus */
+input[type="range"]:focus-visible + .slider-thumb {
+  animation: pulseBlue 1s ease-in-out infinite;
+}
+
+/* ─── Mobile Optimisations ────────────────────────────────────────────────── */
+@media (max-width: 780px) {
+  /* Stack layout */
+  .calc-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Sticky inputs panel header on mobile */
+  .inputs-card-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  /* Metric cards: 2-up on mobile */
+  .metric-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Donut + legend stack vertically on mobile */
+  .breakdown-flex {
+    flex-direction: column !important;
+  }
+
+  /* Formula panel: hide on mobile to save space (still in DOM for SR) */
+  .formula-panel {
+    display: none !important;
+  }
+
+  /* Tab labels: shorter on mobile */
+  .tab-label-full  { display: none; }
+  .tab-label-short { display: inline; }
+}
+
+@media (min-width: 781px) {
+  .tab-label-short { display: none; }
+  .tab-label-full  { display: inline; }
+}
+
+@media (max-width: 480px) {
+  /* Single column metric cards on very small screens */
+  .metric-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Reduce padding */
+  .calc-layout {
+    padding: 14px 12px 40px !important;
+  }
+
+  /* Make header more compact */
+  .calc-header-inner {
+    padding: 0 14px !important;
+  }
+}
+
+/* ─── Print Styles ────────────────────────────────────────────────────────── */
+@media print {
+  /* Show only the print summary */
+  body > div:first-child,
+  .skip-link {
+    display: none !important;
+  }
+
+  #print-summary {
+    display: block !important;
+  }
+}
+
+/* ─── Share Modal ─────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 58, 107, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease both;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(34,76,135,0.2);
+  animation: scaleIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Tooltip ─────────────────────────────────────────────────────────────── */
+.tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+.tooltip-wrapper:hover .tooltip-box,
+.tooltip-wrapper:focus-within .tooltip-box {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.tooltip-box {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1a3a6b;
+  color: #fff;
+  font-size: 11px;
+  font-family: Arial, sans-serif;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  max-width: 220px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 200;
+  /* Prevent clipping at grid edges */
+  min-width: 120px;
+}
+.tooltip-box::after {
+  content: "";
+  position: absolute;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1a3a6b;
+}
+
+/* ─── Slider Input Styles ─────────────────────────────────────────────────── */
+.fincal-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+.fincal-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: inherit;
+  border-radius: 20px;
+}
+.fincal-slider::-moz-range-track {
+  height: 6px;
+  background: #dde6f5;
+  border-radius: 20px;
+  border: none;
+}
+.fincal-slider::-moz-range-progress {
+  height: 6px;
+  background: #224c87;
+  border-radius: 20px;
+}
+.fincal-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #224c87;
+  box-shadow: 0 2px 8px rgba(34,76,135,0.35), 0 0 0 4px rgba(34,76,135,0.10);
+  margin-top: -8px;
+  cursor: grab;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.fincal-slider:hover::-webkit-slider-thumb {
+  box-shadow: 0 4px 14px rgba(34,76,135,0.50), 0 0 0 6px rgba(34,76,135,0.14);
+  transform: scale(1.12);
+}
+.fincal-slider:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.18);
+  box-shadow: 0 4px 18px rgba(34,76,135,0.60), 0 0 0 8px rgba(34,76,135,0.18);
+}
+.fincal-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #224c87;
+  box-shadow: 0 2px 8px rgba(34,76,135,0.35), 0 0 0 4px rgba(34,76,135,0.10);
+  cursor: grab;
+}
+.fincal-slider:focus-visible {
+  outline: none;
+}
+.fincal-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(34,76,135,0.30), 0 2px 8px rgba(34,76,135,0.35);
+}

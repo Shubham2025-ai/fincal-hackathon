@@ -1,0 +1,7 @@
+fincal_retirement.settings:
+  path: '/admin/config/fincal/retirement'
+  defaults:
+    _form: '\Drupal\fincal_retirement\Form\SettingsForm'
+    _title: 'FinCal Retirement Calculator Settings'
+  requirements:
+    _permission: 'administer site configuration'

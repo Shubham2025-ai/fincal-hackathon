@@ -1,0 +1,104 @@
+// Prisma Schema — FinCal Retirement Calculator
+// Database: SQLite (zero-config, single file, perfect for hackathon)
+// Run: npx prisma db push   → creates fincal.db
+// Run: npx prisma studio    → visual DB browser
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Database Configuration ──────────────────────────────────────────────────
+// Switch provider between "mysql" (production) and "sqlite" (local dev)
+// Set DATABASE_URL in .env accordingly.
+//
+// MySQL (production / submission):
+//   DATABASE_URL="mysql://user:password@localhost:3306/fincal_retirement"
+//
+// SQLite (local development — zero config):
+//   DATABASE_URL="file:./fincal.db"
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Every API calculation is logged here ────────────────────────────────────
+model Calculation {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  // Inputs
+  currentAge            Int
+  retirementAge         Int
+  lifeExpectancy        Int
+  currentAnnualExpenses Float
+  inflationRate         Float
+  preRetirementReturn   Float
+  postRetirementReturn  Float
+  stepUpRate            Float    @default(0)
+  mode                  String   @default("flat")  // "flat" | "stepup"
+
+  // Results
+  requiredMonthlySIP      Float
+  finalMonthlySIP         Float?
+  retirementCorpus        Float
+  retirementAnnualExpense Float
+  totalInvested           Float
+  wealthGained            Float
+  yearsToRetirement       Int
+  retirementDuration      Int
+  isSustainable           Boolean
+
+  // Link to saved plan (optional)
+  savedPlan   SavedPlan? @relation(fields: [savedPlanId], references: [id], onDelete: SetNull)
+  savedPlanId Int?
+}
+
+// ─── Named plans saved by user ────────────────────────────────────────────────
+model SavedPlan {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name  String   // e.g. "My Conservative Plan"
+  notes String?  // optional user notes
+
+  // Inputs snapshot
+  currentAge            Int
+  retirementAge         Int
+  lifeExpectancy        Int
+  currentAnnualExpenses Float
+  inflationRate         Float
+  preRetirementReturn   Float
+  postRetirementReturn  Float
+  stepUpRate            Float   @default(0)
+  mode                  String  @default("flat")
+
+  // Results snapshot
+  requiredMonthlySIP      Float
+  finalMonthlySIP         Float?
+  retirementCorpus        Float
+  retirementAnnualExpense Float
+  totalInvested           Float
+  wealthGained            Float
+  yearsToRetirement       Int
+  isSustainable           Boolean
+
+  // All calculations that used this plan
+  calculations Calculation[]
+}
+
+// ─── Daily analytics aggregates ──────────────────────────────────────────────
+model DailyAnalytics {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @unique
+
+  totalCalculations Int   @default(0)
+  totalSavedPlans   Int   @default(0)
+  avgMonthlySIP     Float @default(0)
+  avgCorpus         Float @default(0)
+  avgCurrentAge     Float @default(0)
+  avgRetirementAge  Float @default(0)
+  stepUpCount       Int   @default(0)
+  flatCount         Int   @default(0)
+}

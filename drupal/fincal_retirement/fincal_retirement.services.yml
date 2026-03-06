@@ -1,0 +1,7 @@
+services:
+  fincal_retirement.client:
+    class: Drupal\fincal_retirement\FinCalRetirementClient
+    arguments:
+      - '@http_client'
+      - '@config.factory'
+      - '@logger.factory'
