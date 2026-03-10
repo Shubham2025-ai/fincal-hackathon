@@ -51,7 +51,7 @@ const BUCKET_DEFAULTS = {
 const DEFAULTS = {
   currentAge: 28, retirementAge: 60, lifeExpectancy: 85,
   currentAnnualExpenses: 600000,
-  inflationRate: 6, preRetirementReturn: 12, postRetirementReturn: 7,
+  inflationRate: 6, preRetirementReturn: 12, postRetirementReturn: 8,
   stepUpRate: 10,
 };
 
@@ -384,6 +384,28 @@ export default function RetirementCalculator() {
     effectiveAnnualExpenses, effectiveInflation,
     preRetirementReturn, postRetirementReturn, stepUpRate,
   ]);
+
+  // ── Retirement Readiness Score (0–100) ───────────────────────────────────────
+  const readinessScore = useMemo(() => {
+    if (!results) return null;
+    const yearsToRetire  = retirementAge - currentAge;
+    const monthsToRetire = yearsToRetire * 12;
+    const sip            = results.requiredMonthlySIP;
+
+    // Factor 1: Affordability — SIP as % of typical income proxy (expenses × 1.4)
+    const estimatedMonthlyIncome = (currentAnnualExpenses * 1.4) / 12;
+    const sipRatio               = sip / estimatedMonthlyIncome; // lower = better
+    const affordScore            = Math.max(0, Math.min(40, (1 - sipRatio) * 40));
+
+    // Factor 2: Time — more years = more compounding benefit
+    const timeScore = Math.min(30, (yearsToRetire / 35) * 30);
+
+    // Factor 3: Corpus sustainability
+    const sustainScore = results.isSustainable ? 30 : 10;
+
+    const raw = Math.round(affordScore + timeScore + sustainScore);
+    return Math.max(10, Math.min(99, raw));
+  }, [results, retirementAge, currentAge, currentAnnualExpenses]);
 
   // ── Animate step indicator when results compute ──────────────────────────────
   useEffect(() => {
@@ -974,95 +996,211 @@ export default function RetirementCalculator() {
             {validInput && results && (
               <div className={hasAnimated ? "" : "results-enter"}>
 
-                {/* ── METRIC CARDS ── */}
-                <div className="metric-grid" style={{
+                {/* ── HERO SIP CARD + READINESS SCORE ── */}
+                <div className="animate-fade-up" style={{
+                  display: "grid", gridTemplateColumns: "1fr auto",
+                  gap: 12, marginBottom: 12, alignItems: "stretch",
+                }}>
+                  {/* Hero SIP */}
+                  <div style={{
+                    background: `linear-gradient(135deg, ${C.blue} 0%, #1a3a6b 100%)`,
+                    borderRadius: 16, padding: "22px 24px",
+                    position: "relative", overflow: "hidden",
+                  }}>
+                    <div aria-hidden="true" style={{
+                      position: "absolute", top: -30, right: -30,
+                      width: 120, height: 120, borderRadius: "50%",
+                      background: "rgba(255,255,255,0.06)",
+                    }} />
+                    <div style={{
+                      fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.7)",
+                      fontFamily: "Montserrat, sans-serif",
+                      letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6,
+                    }}>
+                      {isStepUp ? "Starting Monthly SIP" : "Monthly SIP Required"}
+                    </div>
+                    <div style={{
+                      fontSize: 38, fontWeight: 900, color: "#fff",
+                      fontFamily: "Montserrat, sans-serif", lineHeight: 1, marginBottom: 8,
+                    }}>
+                      <AnimatedNumber value={results.requiredMonthlySIP} format={formatINR} duration={600} />
+                    </div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontFamily: "Verdana, Arial, sans-serif" }}>
+                      {isStepUp
+                        ? `Grows ${stepUpRate}% every year → ${formatINR(results.finalMonthlySIP)}/mo by retirement`
+                        : `Invest every month for ${results.yearsToRetirement} years to retire at ${retirementAge}`}
+                    </div>
+                    <div style={{
+                      marginTop: 14, paddingTop: 14,
+                      borderTop: "1px solid rgba(255,255,255,0.15)",
+                      display: "flex", gap: 20,
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", fontFamily: "Montserrat, sans-serif",
+                          fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Corpus Needed</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "Montserrat, sans-serif" }}>
+                          <AnimatedNumber value={results.retirementCorpus} format={formatINR} duration={600} />
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", fontFamily: "Montserrat, sans-serif",
+                          fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Total Invested</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "Montserrat, sans-serif" }}>
+                          <AnimatedNumber value={results.totalInvested} format={formatINR} duration={600} />
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", fontFamily: "Montserrat, sans-serif",
+                          fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Est. Gains</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "Montserrat, sans-serif" }}>
+                          <AnimatedNumber value={results.wealthGained} format={formatINR} duration={600} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Readiness Score Ring */}
+                  {readinessScore !== null && (() => {
+                    const score = readinessScore;
+                    const color = score >= 70 ? "#16a34a" : score >= 45 ? "#d97706" : "#dc2626";
+                    const label = score >= 70 ? "Strong" : score >= 45 ? "Moderate" : "Needs Work";
+                    const r = 42, circ = 2 * Math.PI * r;
+                    const dash = (score / 100) * circ;
+                    return (
+                      <div style={{
+                        background: C.bgCard, border: "1.5px solid #dde6f5",
+                        borderRadius: 16, padding: "18px 16px",
+                        display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "center",
+                        minWidth: 130, textAlign: "center",
+                      }}>
+                        <div style={{
+                          fontSize: 10, fontWeight: 700, color: C.greyText,
+                          fontFamily: "Montserrat, sans-serif",
+                          textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10,
+                        }}>
+                          Readiness Score
+                        </div>
+                        <svg width={100} height={100} viewBox="0 0 100 100" aria-label={`Retirement readiness score: ${score} out of 100`}>
+                          {/* Background ring */}
+                          <circle cx={50} cy={50} r={r} fill="none" stroke="#eef3fb" strokeWidth={8} />
+                          {/* Score ring */}
+                          <circle cx={50} cy={50} r={r} fill="none"
+                            stroke={color} strokeWidth={8}
+                            strokeDasharray={`${dash} ${circ}`}
+                            strokeLinecap="round"
+                            transform="rotate(-90 50 50)"
+                            style={{ transition: "stroke-dasharray 1s ease" }}
+                          />
+                          <text x={50} y={46} textAnchor="middle"
+                            fontSize={20} fontWeight={900}
+                            fill={color} fontFamily="Montserrat, sans-serif">
+                            {score}
+                          </text>
+                          <text x={50} y={60} textAnchor="middle"
+                            fontSize={9} fill={C.greyText} fontFamily="Arial, sans-serif">
+                            / 100
+                          </text>
+                        </svg>
+                        <div style={{
+                          fontSize: 12, fontWeight: 800, color,
+                          fontFamily: "Montserrat, sans-serif", marginTop: 6,
+                        }}>
+                          {label}
+                        </div>
+                        <div style={{
+                          fontSize: 10, color: C.greyText,
+                          fontFamily: "Verdana, Arial, sans-serif", marginTop: 4, lineHeight: 1.5,
+                        }}>
+                          {score >= 70
+                            ? "Your plan looks achievable"
+                            : score >= 45
+                            ? "Consider increasing SIP"
+                            : "Start earlier or save more"}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* ── SECONDARY METRIC CARDS ── */}
+                <div style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
-                  gap: 12, marginBottom: 18,
+                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                  gap: 10, marginBottom: 18,
                 }}>
                   {[
                     {
-                      label: isStepUp ? "Starting Monthly SIP" : "Monthly SIP Required",
-                      accentColor: C.blue, large: true,
-                      value: results.requiredMonthlySIP,
-                      sub: isStepUp
-                        ? `Grows ${stepUpRate}% yearly → ${formatINR(results.finalMonthlySIP)}/mo`
-                        : `For ${results.yearsToRetirement} years starting today`,
-                      tooltip: isStepUp
-                        ? `First month SIP. Increases ${stepUpRate}% every year, reaching ${formatINR(results.finalMonthlySIP)}/mo in year ${results.yearsToRetirement}`
-                        : "The monthly investment needed to reach your retirement corpus",
-                    },
-                    {
-                      label: "Retirement Corpus Needed", accentColor: C.red, large: true,
-                      value: results.retirementCorpus,
-                      sub: `Required at age ${retirementAge}`,
-                      tooltip: "Total savings needed on your retirement date",
-                    },
-                    {
-                      label: "Inflation-Adjusted Expenses", accentColor: C.greyBorder,
+                      label: "Inflation-Adjusted Expenses",
                       value: results.retirementAnnualExpense,
                       sub: "Annual at retirement",
-                      tooltip: `Your current expenses grown at ${inflationRate}% inflation for ${results.yearsToRetirement} years`,
+                      accent: C.greyBorder,
+                      tooltip: `Expenses at ${retirementAge} after ${inflationRate}% inflation`,
                     },
                     {
-                      label: "Total Amount Invested", accentColor: C.blue,
-                      value: results.totalInvested,
-                      sub: `Est. gains: ${formatINR(results.wealthGained)}`,
-                      tooltip: isStepUp
-                        ? "Total of all step-up SIP payments over the investment period"
-                        : "Total SIP payments over the investment period",
+                      label: "Retirement Duration",
+                      value: results.retirementDuration,
+                      sub: "Years corpus must last",
+                      accent: "#7c3aed",
+                      isYears: true,
+                      tooltip: `From age ${retirementAge} to ${lifeExpectancy}`,
                     },
-                  ].map(({ label, value, sub, accentColor, large, tooltip }, idx) => (
-                    <div
-                      key={label}
-                      className="animate-fade-up tooltip-wrapper"
-                      style={{
-                        animationDelay: `${idx * 0.06}s`,
-                        position: "relative",   // tooltip anchors to THIS card
-                      }}
-                    >
+                    {
+                      label: "Corpus Sustainability",
+                      value: null,
+                      sub: results.isSustainable
+                        ? `₹${formatINR(results.remainingCorpus)} remaining`
+                        : "Corpus may deplete early",
+                      accent: results.isSustainable ? "#16a34a" : C.red,
+                      isStatus: true,
+                      tooltip: "Whether your corpus lasts through life expectancy",
+                    },
+                  ].map(({ label, value, sub, accent, isYears, isStatus, tooltip }, idx) => (
+                    <div key={label} className="tooltip-wrapper animate-fade-up"
+                      style={{ animationDelay: `${idx * 0.07}s`, position: "relative" }}>
                       <div style={{
                         background: C.bgCard, border: "1.5px solid #dde6f5",
-                        borderRadius: 12, padding: large ? "20px 18px" : "14px 16px",
-                        position: "relative", overflow: "hidden",
-                        height: "100%",
+                        borderRadius: 12, padding: "14px 16px",
+                        position: "relative", overflow: "hidden", height: "100%",
                       }}>
                         <div aria-hidden="true" style={{
                           position: "absolute", top: 0, left: 0,
                           width: 4, height: "100%",
-                          background: accentColor, borderRadius: "12px 0 0 12px",
+                          background: accent, borderRadius: "12px 0 0 12px",
                         }} />
                         <div style={{ paddingLeft: 10 }}>
                           <div style={{
                             fontSize: 10, color: C.greyText,
-                            fontFamily: "var(--font-montserrat), Montserrat, sans-serif",
+                            fontFamily: "Montserrat, sans-serif",
                             fontWeight: 700, letterSpacing: "0.08em",
                             textTransform: "uppercase", marginBottom: 6,
-                          }}>
-                            {label}
-                          </div>
-                          <div style={{
-                            fontSize: large ? 24 : 20, fontWeight: 900,
-                            color: C.blueDark,
-                            fontFamily: "var(--font-montserrat), Montserrat, sans-serif",
-                            lineHeight: 1.1,
-                          }}>
-                            <AnimatedNumber value={value} format={formatINR} duration={500} />
-                          </div>
-                          {sub && (
-                            <div style={{ fontSize: 11, color: C.greyText, marginTop: 4, fontFamily: "Arial, sans-serif" }}>
-                              {sub}
+                          }}>{label}</div>
+                          {isStatus ? (
+                            <div style={{ fontSize: 18, fontWeight: 900, color: accent,
+                              fontFamily: "Montserrat, sans-serif" }}>
+                              {results.isSustainable ? "✓ Yes" : "⚠ No"}
+                            </div>
+                          ) : isYears ? (
+                            <div style={{ fontSize: 20, fontWeight: 900, color: C.blueDark,
+                              fontFamily: "Montserrat, sans-serif" }}>
+                              {value} <span style={{ fontSize: 12 }}>yrs</span>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 20, fontWeight: 900, color: C.blueDark,
+                              fontFamily: "Montserrat, sans-serif" }}>
+                              <AnimatedNumber value={value} format={formatINR} duration={500} />
                             </div>
                           )}
+                          <div style={{ fontSize: 11, color: C.greyText, marginTop: 4,
+                            fontFamily: "Arial, sans-serif" }}>{sub}</div>
                         </div>
                       </div>
-                      {/* Tooltip — anchored to card, not grid row */}
                       <span className="tooltip-box" role="tooltip">{tooltip}</span>
                     </div>
                   ))}
                 </div>
 
-                {/* ── DONUT + LEGEND + FORMULA ── */}
+                                {/* ── DONUT + LEGEND + FORMULA ── */}
                 <div className="animate-scale-in" style={{
                   background: C.bgCard, borderRadius: 16,
                   boxShadow: "0 2px 20px rgba(34,76,135,0.07)",

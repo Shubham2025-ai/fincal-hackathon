@@ -37,3 +37,5 @@ fincal.db-journal
 
 # Prisma generated client
 node_modules/.prisma
+
+.vercel

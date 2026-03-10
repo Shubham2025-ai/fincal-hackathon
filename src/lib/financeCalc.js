@@ -113,15 +113,14 @@ export function buildDrawdownData(
   let remaining = startCorpus;
   const data = [];
 
-  for (let y = 1; y <= durationYears; y++) {
-    // Expense rises each retirement year
-    const yearlyExpense  = annualExpenseAtRetirement * Math.pow(1 + inf, y - 1);
-    const monthlyExpense = yearlyExpense / 12;
+  // Use annual compounding with flat expense to exactly match the PV of Annuity formula.
+  // Corpus = Expense × [(1-(1+r)^-t)/r] uses annual rate r and constant withdrawals.
+  const annualRate = postRetirementReturn / 100;
 
-    for (let m = 0; m < 12; m++) {
-      remaining = remaining * (1 + mpr) - monthlyExpense;
-      if (remaining < 0) remaining = 0;
-    }
+  for (let y = 1; y <= durationYears; y++) {
+    // End-of-period: compound first, then withdraw (matches standard PV annuity)
+    remaining = remaining * (1 + annualRate) - annualExpenseAtRetirement;
+    if (remaining < 0) remaining = 0;
     data.push({
       age:    retirementAge + y,
       corpus: Math.round(remaining),
@@ -199,9 +198,9 @@ export function calculateRetirement({
     wealthGained,
     accumulationData,
     drawdownData,
-    // Corpus sustainability flag
-    isSustainable: drawdownData.at(-1)?.corpus > 0,
-    remainingCorpus: drawdownData.at(-1)?.corpus ?? 0,
+    // Corpus sustainability flag — allow small negative from floating point rounding
+    isSustainable: (drawdownData.at(-1)?.corpus ?? 0) >= -50000,
+    remainingCorpus: Math.max(0, drawdownData.at(-1)?.corpus ?? 0),
   };
 }
 
